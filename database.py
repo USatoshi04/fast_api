@@ -4,26 +4,37 @@ from fastapi import HTTPException
 import motor.motor_asyncio
 from bson import ObjectId
 from auth_utils import AuthJwtCsrf
-import asyncio
 
-# モンゴDBの接続文字列を設定
 MONGO_API_KEY = config("MONGO_API_KEY")
 
-# Motor用に明示的に新しいイベントループを作成
-motor_loop = asyncio.new_event_loop()
-asyncio.set_event_loop(motor_loop)
-
-# イベントループをMotorクライアントに直接渡す
-client = motor.motor_asyncio.AsyncIOMotorClient(
-    MONGO_API_KEY,
-    io_loop=motor_loop
-)
-
-database = client.API_DB
-collection_todo = database.todo
-collection_user = database.user
+# グローバル変数の初期化
+client = None
+database = None
+collection_todo = None
+collection_user = None
 auth = AuthJwtCsrf()
 
+async def connect_to_mongo():
+    """アプリケーション起動時に呼び出す接続初期化関数"""
+    global client, database, collection_todo, collection_user
+    # シンプルな接続設定
+    client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_API_KEY)
+    database = client.API_DB
+    collection_todo = database.todo
+    collection_user = database.user
+    
+    # 接続テスト - これにより初期化が確実に行われる
+    await database.command('ping')
+    print("MongoDB接続が確立されました")
+
+async def close_mongo_connection():
+    """アプリケーション終了時に呼び出す接続クローズ関数"""
+    global client
+    if client:
+        client.close()
+        print("MongoDB接続を閉じました")
+
+# 以下、他の関数は変更なし
 def todo_serializer(todo) -> dict:
     return {
         "id": str(todo["_id"]),
@@ -43,7 +54,6 @@ async def db_create_todo(data: dict) -> Union[dict, bool]:
     if new_todo:
         return todo_serializer(new_todo)
     return False
-
 
 async def db_get_todos() -> list:
     todos = []

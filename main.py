@@ -5,10 +5,23 @@ from routers import route_todo, route_auth
 from schemas import SuccessMsg, CsrfSettings
 from fastapi_csrf_protect import CsrfProtect
 from fastapi_csrf_protect.exceptions import CsrfProtectError
+from database import connect_to_mongo, close_mongo_connection
 
 app = FastAPI()
+
+# データベース接続のライフサイクル管理
+@app.on_event("startup")
+async def startup_db_client():
+    await connect_to_mongo()
+
+@app.on_event("shutdown")
+async def shutdown_db_client():
+    await close_mongo_connection()
+
+# ルーターの追加
 app.include_router(route_todo.router)
 app.include_router(route_auth.router)
+
 origins = ['http://localhost:3000']
 app.add_middleware(
     CORSMiddleware,
@@ -34,5 +47,3 @@ def csrf_protect_exception_handler(request: Request, exc: CsrfProtectError):
 @app.get("/", response_model=SuccessMsg)
 def root():
     return {"message": " Welcome to Fast API"}
-
-
