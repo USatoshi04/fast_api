@@ -8,7 +8,12 @@ import asyncio
 
 MONGO_API_KEY = config("MONGO_API_KEY")
 
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_API_KEY)
+client = motor.motor_asyncio.AsyncIOMotorClient(
+    MONGO_API_KEY,
+    ssl=True,
+    ssl_cert_reqs='CERT_NONE',  # 本番環境では適切な証明書検証を設定すべき
+    serverSelectionTimeoutMS=5000
+)
 client.get_io_loop = asyncio.get_event_loop
 
 database = client.API_DB
