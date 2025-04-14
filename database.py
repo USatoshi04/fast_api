@@ -4,12 +4,20 @@ from fastapi import HTTPException
 import motor.motor_asyncio
 from bson import ObjectId
 from auth_utils import AuthJwtCsrf
+import asyncio
 
 # モンゴDBの接続文字列を設定
 MONGO_API_KEY = config("MONGO_API_KEY")
 
-# クライアントの初期化をシンプルにする
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_API_KEY)
+# Motor用に明示的に新しいイベントループを作成
+motor_loop = asyncio.new_event_loop()
+asyncio.set_event_loop(motor_loop)
+
+# イベントループをMotorクライアントに直接渡す
+client = motor.motor_asyncio.AsyncIOMotorClient(
+    MONGO_API_KEY,
+    io_loop=motor_loop
+)
 
 database = client.API_DB
 collection_todo = database.todo
