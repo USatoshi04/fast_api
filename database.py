@@ -10,15 +10,14 @@ MONGO_API_KEY = config("MONGO_API_KEY")
 
 client = motor.motor_asyncio.AsyncIOMotorClient(
     MONGO_API_KEY,
-    ssl=True,
-    ssl_cert_reqs='CERT_NONE',
+    tls=True,  # sslよりも新しいtlsを使用
+    tlsAllowInvalidCertificates=False,  # 証明書検証を有効に
     serverSelectionTimeoutMS=10000,
     connectTimeoutMS=30000,
     socketTimeoutMS=60000,
     retryWrites=True,
     w='majority'
 )
-client.get_io_loop = asyncio.get_event_loop
 
 database = client.API_DB
 collection_todo = database.todo
